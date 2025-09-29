@@ -7,6 +7,7 @@ Listeners:
 
 * UDP - line separated formatted as `<channel>:<message>`
 * TCP - connection separated formatted as `<channel>:<message>`
+* HTTP - `PUT` request formatted as `{"channel": "<channel>", "message": "<message>"}`
 
 Supports:
 
@@ -14,6 +15,10 @@ Supports:
 * Multiple message sources
 * IRC server reconnection handling
 * IRC server authentication via SASL
+* Basic metrics (prometheus format)
+
+Does not support:
+* Message queueing
 
 ## Basic local testing
 

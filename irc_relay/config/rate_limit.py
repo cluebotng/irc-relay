@@ -27,7 +27,7 @@ class SlidingWindowRateLimitConfig:
             bucket_configs = json.loads(raw_config)
             return SlidingWindowRateLimitConfig(
                 buckets=[
-                    sliding_window.BucketConfig(window=bucket_config["window"], limit=bucket_config["limit"])
+                    sliding_window.BucketConfig(window=int(bucket_config["window"]), limit=int(bucket_config["limit"]))
                     for bucket_config in bucket_configs
                 ]
             )

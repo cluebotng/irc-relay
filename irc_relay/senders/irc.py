@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import logging
 import time
@@ -213,3 +214,4 @@ class IrcClient:
 
             irc_connection_status.set(0)
             self._can_accept_messages = {channel: False for channel in self._can_accept_messages.keys()}
+            await asyncio.sleep(5)
