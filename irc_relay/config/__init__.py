@@ -1,0 +1,1 @@
+PROMETHEUS_METRIC_NAMESPACE = "cbng_irc_relay"
