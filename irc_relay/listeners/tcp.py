@@ -1,7 +1,7 @@
 import asyncio
 import logging
 
-
+from irc_relay.listeners.metrics import listener_messages_accepted, listener_messages_rejected
 from irc_relay.messages.dispatcher import MessageDispatcher
 from irc_relay.messages.models import Message
 
@@ -27,8 +27,10 @@ class TcpListener:
             parts = data.decode("utf-8").split(":")
             if len(parts) >= 2:
                 await self._dispatcher.send(Message(channel=parts[0], string=":".join(parts[1:])))
+                listener_messages_accepted.labels(listener="tcp").inc()
             else:
                 logger.error(f"Invalid message received: {data}")
+                listener_messages_rejected.labels(listener="tcp").inc()
 
     async def run(self) -> None:
         logger.info("Starting TCP Listener")

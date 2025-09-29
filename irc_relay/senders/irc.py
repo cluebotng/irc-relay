@@ -1,10 +1,17 @@
 import base64
 import logging
+import time
 from typing import Optional, List, Dict
 
 import bottom
 
 from irc_relay.rate_limit.base import RateLimiter
+from irc_relay.senders.metrics import (
+    irc_messages_accepted,
+    irc_messages_rejected,
+    irc_connection_status,
+    irc_connection_time,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -53,18 +60,22 @@ class IrcClient:
         channel = channel.lower()
         if channel not in self._allowed_channels:
             logger.warning(f"{channel} is not in allowed channels, ignoring")
+            irc_messages_rejected.labels(channel=channel, reason="missing_in_allowed").inc()
             return
 
         if not self._can_accept_messages[channel]:
             logger.warning(f"{channel} can not accept messages, ignoring")
+            irc_messages_rejected.labels(channel=channel, reason="not_joined").inc()
             return
 
         if not self._rate_limiter.should_allow():
             logger.warning(f"[{channel}] dropping due to rate limit: {string}")
+            irc_messages_rejected.labels(channel=channel, reason="rate_limit").inc()
             return
 
         logger.info(f"Sending [{channel}] {string}")
         await self._client.send("privmsg", target=channel, message=string)
+        irc_messages_accepted.labels(channel=channel).inc()
 
     async def shutdown(self):
         logger.info("Shutting down IRC Client")
@@ -168,8 +179,12 @@ class IrcClient:
 
     async def _connect_callback(self, **kwargs) -> None:
         logger.debug("Connected to IRC")
+        irc_connection_status.set(1)
+        irc_connection_time.set(time.time())
+
         if not await self._authenticate_via_sasl():
             logger.error("SASL failed")
+            irc_connection_status.set(0)
             await self._client.disconnect()
             return
 
@@ -196,4 +211,5 @@ class IrcClient:
             await self._client.wait("client_disconnect")
             logger.error("Disconnected by remote")
 
+            irc_connection_status.set(0)
             self._can_accept_messages = {channel: False for channel in self._can_accept_messages.keys()}

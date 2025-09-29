@@ -4,6 +4,9 @@ requires-python = ">=3.12"
 dependencies = [
     "asyncudp",
     "bottom",
+    "prometheus-client",
+    "fastapi",
+    "uvicorn",
 ]
 
 [tool.poetry.group.test.dependencies]

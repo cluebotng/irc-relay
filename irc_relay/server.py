@@ -5,9 +5,10 @@ import logging
 from irc_relay.config.runtime import RuntimeConfig
 from irc_relay.listeners.tcp import TcpListener
 from irc_relay.messages.dispatcher import MessageDispatcher, IrcReceiver
-from irc_relay.senders.irc import IrcClient
 from irc_relay.listeners.udp import UdpListener
+from irc_relay.http_api.server import HttpServer
 from irc_relay.rate_limit.sliding_window import SlidingWindowRateLimit
+from irc_relay.senders.irc import IrcClient
 
 logger = logging.getLogger(__name__)
 
@@ -43,11 +44,18 @@ async def main():
         message_dispatcher,
     )
 
+    run_http_server = HttpServer(
+        runtime_config.metrics.address,
+        runtime_config.metrics.port,
+        message_dispatcher,
+    )
+
     run_udp_listener = asyncio.create_task(udp_listener.run())
     run_tcp_listener = asyncio.create_task(tcp_listener.run())
+    run_http_server = asyncio.create_task(run_http_server.run())
     run_irc_client = asyncio.create_task(irc_client.run())
 
-    await asyncio.gather(run_udp_listener, run_tcp_listener, run_irc_client)
+    await asyncio.gather(run_udp_listener, run_tcp_listener, run_irc_client, run_http_server)
 
 
 if __name__ == "__main__":

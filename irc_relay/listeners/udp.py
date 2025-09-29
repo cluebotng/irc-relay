@@ -2,6 +2,7 @@ import logging
 
 import asyncudp
 
+from irc_relay.listeners.metrics import listener_messages_rejected, listener_messages_accepted
 from irc_relay.messages.dispatcher import MessageDispatcher
 from irc_relay.messages.models import Message
 
@@ -27,7 +28,9 @@ class UdpListener:
             parts = data.decode("utf-8").split(":")
             if len(parts) >= 2:
                 await self._dispatcher.send(Message(channel=parts[0], string=":".join(parts[1:])))
+                listener_messages_accepted.labels(listener="udp").inc()
             else:
                 logger.error(f"Invalid message received: {data}")
+                listener_messages_rejected.labels(listener="udp").inc()
 
         sock.close()
