@@ -1,4 +1,29 @@
 [project]
 name = "irc-relay"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "asyncudp",
+    "bottom",
+]
+
+[tool.poetry.group.test.dependencies]
+tox = "*"
+tox-current-env = "*"
+black = "*"
+ruff = "*"
+bandit = "*"
+pytest = "*"
+freezegun = "*"
+
+[tool.poetry]
+package-mode = false
+
+[tool.ruff]
+line-length = 120
+
+[tool.black]
+line-length = 120
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
