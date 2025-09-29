@@ -1,7 +1,7 @@
 name: Deploy
 on: { push: { tags: [ 'v*' ] } }
 jobs:
-  deploy-components:
+  update-components:
     runs-on: ubuntu-latest
     steps:
       - uses: cluebotng/ci-update-component-ref@main
