@@ -35,8 +35,10 @@ class HuggleMessageProcessor:
                 except ValueError:
                     logger.error(f"Parsed score is not a number: {parts}")
 
-        messages = [("#en.wikipedia.huggle", f"ROLLBACK {diff_id}")]
-        if score and score > 0.1:
+        messages = []
+        if message.string.endswith("# Reverted"):
+            messages.append(("#en.wikipedia.huggle", f"ROLLBACK {diff_id}"))
+        elif score and score > 0.1:
             huggle_score = int((score - 0.2) * 1000)
             messages.append(("#en.wikipedia.huggle", f"SCORED {diff_id} {huggle_score}"))
         return messages
