@@ -40,23 +40,31 @@ class IrcClient:
         self._rate_limiter = rate_limiter
 
         self._allowed_channels = [channel.lower() for channel in allowed_channels]
+
+        self._irc_server = server
+        self._irc_port = port
         self._irc_nick = nick
         self._irc_username = username
         self._irc_password = password
 
-        self._client = bottom.Client(host=server, port=port, ssl=(port == 6697))
+        self._client = self._create_client()
+
+    def _create_client(self) -> bottom.Client:
+        client = bottom.Client(host=self._irc_server, port=self._irc_port, ssl=(self._irc_port == 6697))
 
         # Deal with SASL messages not handled by rfc2812_handler
-        self._client.message_handlers.insert(0, self._sasl_message_handler)
+        client.message_handlers.insert(0, self._sasl_message_handler)
 
         # Dump all messages if we are debugging
         if logger.getEffectiveLevel() == logging.DEBUG:
-            self._client.message_handlers.append(self._debug_message_handler)
+            client.message_handlers.append(self._debug_message_handler)
 
         # Callbacks
-        self._client.on("CLIENT_CONNECT")(self._connect_callback)
-        self._client.on("PING")(self._ping_callback)
-        self._client.on("PRIVMSG")(self._message_callback)
+        client.on("CLIENT_CONNECT")(self._connect_callback)
+        client.on("PING")(self._ping_callback)
+        client.on("PRIVMSG")(self._message_callback)
+
+        return client
 
     async def send_to_channel(self, channel: str, string: str) -> None:
         channel = channel.lower()
@@ -210,10 +218,14 @@ class IrcClient:
     async def run(self) -> None:
         logger.info(f"[{self._identifier}] Starting IRC Client")
         while self._should_run:
+            if self._client is None:
+                self._client = self._create_client()
+
             await self._client.connect()
             await self._client.wait("client_disconnect")
             logger.error(f"[{self._identifier}] Disconnected by remote")
 
             irc_connection_status.labels(name=self._identifier).set(0)
             self._can_accept_messages = {channel: False for channel in self._can_accept_messages.keys()}
+            self._client = None
             await asyncio.sleep(5)

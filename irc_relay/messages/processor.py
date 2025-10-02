@@ -15,7 +15,7 @@ class HuggleMessageProcessor:
             return []
 
         if "diff=" not in message.string:
-            logger.warning(f"Ignoring message with no diff {message}")
+            logger.debug(f"Ignoring message with no diff {message}")
             return []
 
         diff_id = message.string.split("diff=")[1].split("&")[0]
