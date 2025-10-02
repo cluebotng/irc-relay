@@ -35,8 +35,6 @@ class SlidingWindowRateLimit(RateLimiter):
         if current_usage <= bucket.limit:
             self._windows[bucket].append(time.time())
             return True
-
-        print(f"Bucket {bucket} has no capacity {current_usage}")
         return False
 
     def should_allow(self) -> bool:

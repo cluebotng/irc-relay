@@ -31,8 +31,9 @@ class IrcClient:
         username: Optional[str],
         password: Optional[str],
         allowed_channels: List[str],
-        rate_limiter: RateLimiter,
+        rate_limiter: Optional[RateLimiter],
     ):
+        self._identifier = f"{server}:{port}"
 
         self._can_accept_messages = {channel.lower(): False for channel in allowed_channels}
         self._should_run = True
@@ -43,7 +44,7 @@ class IrcClient:
         self._irc_username = username
         self._irc_password = password
 
-        self._client = bottom.Client(host=server, port=port, ssl=True)
+        self._client = bottom.Client(host=server, port=port, ssl=(port == 6697))
 
         # Deal with SASL messages not handled by rfc2812_handler
         self._client.message_handlers.insert(0, self._sasl_message_handler)
@@ -60,26 +61,26 @@ class IrcClient:
     async def send_to_channel(self, channel: str, string: str) -> None:
         channel = channel.lower()
         if channel not in self._allowed_channels:
-            logger.warning(f"{channel} is not in allowed channels, ignoring")
-            irc_messages_rejected.labels(channel=channel, reason="missing_in_allowed").inc()
+            logger.debug(f"[{self._identifier}] {channel} is not in allowed channels, ignoring")
+            irc_messages_rejected.labels(name=self._identifier, channel=channel, reason="missing_in_allowed").inc()
             return
 
         if not self._can_accept_messages[channel]:
-            logger.warning(f"{channel} can not accept messages, ignoring")
-            irc_messages_rejected.labels(channel=channel, reason="not_joined").inc()
+            logger.warning(f"[{self._identifier}] {channel} can not accept messages, ignoring")
+            irc_messages_rejected.labels(name=self._identifier, channel=channel, reason="not_joined").inc()
             return
 
-        if not self._rate_limiter.should_allow():
-            logger.warning(f"[{channel}] dropping due to rate limit: {string}")
-            irc_messages_rejected.labels(channel=channel, reason="rate_limit").inc()
+        if self._rate_limiter and not self._rate_limiter.should_allow():
+            logger.warning(f"[{self._identifier}] [{channel}] dropping due to rate limit: {string}")
+            irc_messages_rejected.labels(name=self._identifier, channel=channel, reason="rate_limit").inc()
             return
 
         logger.info(f"Sending [{channel}] {string}")
         await self._client.send("privmsg", target=channel, message=string)
-        irc_messages_accepted.labels(channel=channel).inc()
+        irc_messages_accepted.labels(name=self._identifier, channel=channel).inc()
 
     async def shutdown(self):
-        logger.info("Shutting down IRC Client")
+        logger.info(f"[{self._identifier}] Shutting down IRC Client")
         self._should_run = False
         if self._client:
             await self._client.disconnect()
@@ -123,31 +124,31 @@ class IrcClient:
         self, next_handler: bottom.NextMessageHandler[bottom.Client], client: bottom.Client, message: bytes
     ) -> None:
         # For debugging only, prefer to use callbacks
-        logger.debug(f"Received: {message.decode()}")
+        logger.debug(f"[{self._identifier}] Received: {message.decode()}")
         await next_handler(client, message)
 
     async def _ping_callback(self, message: str, **kwargs) -> None:
         await self._client.send("pong", message=message)
 
     async def _message_callback(self, nick: str, target: str, message: str, **kwargs) -> None:
-        logger.info(f"Got message from {nick} in {target: {message}}")
+        logger.info(f"[{self._identifier}] Got message from {nick} in {target: {message}}")
 
     async def _authenticate_via_sasl(self) -> bool:
         if not (self._irc_username and self._irc_password):
-            logger.info("No credentials, skipping SASL")
+            logger.info(f"[{self._identifier}] No credentials, skipping SASL")
             return True
 
         # Ask to do SASL
-        logger.debug("Requesting SASL capabilities")
+        logger.debug(f"[{self._identifier}] Requesting SASL capabilities")
         await self._client.send_message("CAP REQ sasl")
 
         response = (await bottom.wait_for(self._client, ["CAP_ACK"], mode="first"))[0]
         capabilities = response.get("capabilities", [])
         if "sasl" not in capabilities:
-            logger.error(f"Server did not agree to SASL: {capabilities}")
+            logger.error(f"[{self._identifier}] Server did not agree to SASL: {capabilities}")
             return False
 
-        logger.debug(f"Server agreed to capabilities: {response}")
+        logger.debug(f"[{self._identifier}] Server agreed to capabilities: {response}")
 
         # Ask to start authentication
         logger.debug("Asking server to authenticate")
@@ -155,13 +156,13 @@ class IrcClient:
 
         # Server wants credentials
         await bottom.wait_for(self._client, ["SASL_AUTHENTICATION_REQUEST"], mode="first")
-        logger.debug("Server requested authentication")
+        logger.debug(f"[{self._identifier}] Server requested authentication")
 
         # Send credentials
         auth_string = base64.b64encode(
             f"{self._irc_nick}\0{self._irc_username}\0{self._irc_password}".encode("utf-8")
         ).decode("utf-8")
-        logger.debug("Sending authentication")
+        logger.debug(f"[{self._identifier}] Sending authentication")
         await self._client.send_message(f"AUTHENTICATE {auth_string}")
 
         response = await bottom.wait_for(
@@ -179,39 +180,40 @@ class IrcClient:
         return False
 
     async def _connect_callback(self, **kwargs) -> None:
-        logger.debug("Connected to IRC")
-        irc_connection_status.set(1)
-        irc_connection_time.set(time.time())
+        logger.debug(f"[{self._identifier}] Connected to IRC")
+        irc_connection_status.labels(name=self._identifier).set(1)
+        irc_connection_time.labels(name=self._identifier).set(time.time())
 
         if not await self._authenticate_via_sasl():
-            logger.error("SASL failed")
-            irc_connection_status.set(0)
+            logger.error(f"[{self._identifier}] SASL failed")
+            irc_connection_status.labels(name=self._identifier).set(0)
             await self._client.disconnect()
             return
 
-        logger.debug(f"Sending registration details ({self._irc_nick})")
+        logger.debug(f"[{self._identifier}] Sending registration details ({self._irc_nick})")
         await self._client.send("nick", nick=self._irc_nick)
         await self._client.send(
             "user",
             nick=self._irc_nick,
-            realname="ClueBot NG IRC Relay - https://github.com/cluebotng/irc-relay",
+            realname="ClueBot NG IRC Relay",
         )
+        await self._client.send_message(f"MODE {self._irc_nick} +B")
 
-        logger.debug("Waiting for end of MOTD before joining channels")
+        logger.debug(f"[{self._identifier}] Waiting for end of MOTD before joining channels")
         await bottom.wait_for(self._client, ["RPL_ENDOFMOTD", "ERR_NOMOTD"], mode="first")
 
-        logger.debug(f"Joining channels: {self._allowed_channels}")
+        logger.info(f"[{self._identifier}] Joining channels: {self._allowed_channels}")
         for channel in self._allowed_channels:
             await self._client.send("join", channel=channel)
             self._can_accept_messages[channel] = True
 
     async def run(self) -> None:
-        logger.info("Starting IRC Client")
+        logger.info(f"[{self._identifier}] Starting IRC Client")
         while self._should_run:
             await self._client.connect()
             await self._client.wait("client_disconnect")
-            logger.error("Disconnected by remote")
+            logger.error(f"[{self._identifier}] Disconnected by remote")
 
-            irc_connection_status.set(0)
+            irc_connection_status.labels(name=self._identifier).set(0)
             self._can_accept_messages = {channel: False for channel in self._can_accept_messages.keys()}
             await asyncio.sleep(5)

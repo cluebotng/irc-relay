@@ -1,7 +1,8 @@
 import asyncio
 
-from irc_relay.senders.irc import IrcClient
 from irc_relay.messages.models import Message
+from irc_relay.messages.processor import HuggleMessageProcessor
+from irc_relay.senders.irc import IrcClient
 
 
 class MessageReceiver:
@@ -17,9 +18,20 @@ class IrcReceiver(MessageReceiver):
         await self._irc_client.send_to_channel(message.channel, message.string)
 
 
-class DebugReceiver(MessageReceiver):
+class HuggleIrcReceiver(IrcReceiver, HuggleMessageProcessor):
     async def send(self, message: Message) -> None:
+        huggle_messages = await self._get_huggle_messages(message)
+        await asyncio.gather(
+            *[self._irc_client.send_to_channel(channel, message) for channel, message in huggle_messages]
+        )
+
+
+class DebugReceiver(MessageReceiver, HuggleMessageProcessor):
+    async def send(self, message: Message) -> None:
+        huggle_messages = await self._get_huggle_messages(message)
         print(f"[{message.channel}] {message.string}")
+        print(huggle_messages)
+        print("")
 
 
 class MessageDispatcher:
@@ -34,3 +46,9 @@ class MessageDispatcher:
 
     async def send(self, message: Message) -> None:
         await asyncio.gather(*[receiver.send(message) for receiver in self._receivers])
+
+
+SUPPORTED_RECEIVERS = {
+    "irc": IrcReceiver,
+    "huggle": HuggleIrcReceiver,
+}
