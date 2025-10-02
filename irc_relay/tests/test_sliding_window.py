@@ -29,7 +29,6 @@ class TestSlidingWindowRateLimit:
         # Progress the second to avoid the 1 second bucket
         instance = 0
         for s in range(1, 11):
-            print(f"2025-09-01 00:00:{10 + s}")
             with freeze_time(f"2025-09-01 00:00:{10 + s}"):
                 for x in range(0, 10):
                     instance += 1

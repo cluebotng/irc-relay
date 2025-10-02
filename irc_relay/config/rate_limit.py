@@ -22,8 +22,8 @@ class SlidingWindowRateLimitConfig:
         )
 
     @staticmethod
-    def from_environment() -> "SlidingWindowRateLimitConfig":
-        if raw_config := os.environ.get("IRC_RELAY_LIMIT_SLIDING_WINDOW_CONFIG"):
+    def from_environment(env_var_prefix: str) -> "SlidingWindowRateLimitConfig":
+        if raw_config := os.environ.get(f"{env_var_prefix}_CONFIG"):
             bucket_configs = json.loads(raw_config)
             return SlidingWindowRateLimitConfig(
                 buckets=[
