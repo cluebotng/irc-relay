@@ -7,6 +7,6 @@ jobs:
       - uses: cluebotng/ci-update-component-ref@main
         with:
           tool: '*'
-          repository: 'https://github.com/cluebotng/irc_relay.git'
+          repository: 'https://github.com/cluebotng/irc-relay.git'
           ref: '${{ github.ref }}'
           gh_app_key: '${{ secrets.CI_COMPONENT_CONFIGS_APP_KEY }}'
