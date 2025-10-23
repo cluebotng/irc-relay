@@ -1,14 +1,8 @@
 {
-    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-    "extends": ["config:recommended"],
-    "automerge": true,
-    "automergeStrategy": "rebase",
-    "regexManagers": [
-        {
-            "fileMatch": ["^\\.python-version$"],
-            "matchStrings": ["^(?<depName>python)\\s*(?<currentValue>.*)$"],
-            "datasourceTemplate": "python-version",
-        }
-    ],
-    "packageRules": [{"matchDatasources": ["python-version"], "allowedVersions": "<3.14.0"}],
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended"
+  ],
+  "automerge": true,
+  "automergeStrategy": "rebase"
 }
