@@ -16,7 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: ./.github/actions/setup-python-environment
+      - uses: cluebotng/ci-setup-python-environment@main
         with:
           install_dependencies: false
 
@@ -47,7 +47,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: ./.github/actions/setup-python-environment
+      - uses: cluebotng/ci-setup-python-environment@main
 
       - name: Run tox target
         run: poetry run tox --current-env -e ${{ matrix.target }}
@@ -84,7 +84,7 @@ jobs:
     steps:
       - uses: actions/checkout@v5
 
-      - uses: ./.github/actions/setup-python-environment
+      - uses: cluebotng/ci-setup-python-environment@main
 
       - name: Run tox target
         run: poetry run tox --current-env -e test-${{ matrix.target }}
