@@ -930,14 +930,14 @@ completion = ["argcomplete (>=3.6.3)"]
 
 [[package]]
 name = "tox-current-env"
-version = "0.0.16"
+version = "0.0.17"
 description = "Use current environment instead of virtualenv for tox testenvs"
 optional = false
 python-versions = ">=3.6"
 groups = ["test"]
 files = [
-    {file = "tox_current_env-0.0.16-py3-none-any.whl", hash = "sha256:88db23525a6514dee6350df01f5b591654b72e7709df3c57e9e1edb1bbc22737"},
-    {file = "tox_current_env-0.0.16.tar.gz", hash = "sha256:2e453c3e82e837d35846004a678db4504e24e5c0419d6e42aa07ca8294fad1bd"},
+    {file = "tox_current_env-0.0.17-py3-none-any.whl", hash = "sha256:3fe0500665971240b254253aed335bff172fcb841c37190e8358be800ae0db98"},
+    {file = "tox_current_env-0.0.17.tar.gz", hash = "sha256:97d99d041d71e3b1831b6713db74ea24ac6e5bfa18eb481598b81d624cad16d2"},
 ]
 
 [package.dependencies]
