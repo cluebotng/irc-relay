@@ -1,48 +1,65 @@
 #!/usr/bin/env python3
-import asyncio
-import logging
+"""Dev script for manually sending test messages to the HTTP API."""
 
-import asyncudp
+import json
+import urllib.request
 
 from irc_relay.config.runtime import RuntimeConfig
 
 
-async def send_via_udp(address: str, port: int, channel: str, message: str) -> None:
-    s = await asyncudp.create_socket(remote_addr=(address, port))
-    s.sendto(f"{channel}:{message}".encode("utf-8"))
-    s.close()
+def send_message(address: str, port: int, channel: str, message: str) -> None:
+    data = json.dumps({"channel": channel, "string": message}).encode("utf-8")
+    req = urllib.request.Request(
+        f"http://{address}:{port}/",
+        data=data,
+        method="PUT",
+        headers={"Content-Type": "application/json"},
+    )
+    urllib.request.urlopen(req)  # nosec B310
 
 
-async def send_via_tcp(address: str, port: int, channel: str, message: str) -> None:
-    _, writer = await asyncio.open_connection(address, port)
-    writer.write(f"{channel}:{message}".encode("utf-8"))
-    await writer.drain()
-    writer.close()
-    await writer.wait_closed()
+def send_edit(address: str, port: int, payload: dict) -> None:
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        f"http://{address}:{port}/",
+        data=data,
+        method="PUT",
+        headers={"Content-Type": "application/json"},
+    )
+    urllib.request.urlopen(req)  # nosec B310
 
 
-async def main():
-    logging.basicConfig(level=logging.INFO)
+def main():
     runtime_config = RuntimeConfig.from_env()
-    await send_via_udp(
-        runtime_config.listener.address,
-        runtime_config.listener.port,
+    address = runtime_config.metrics.address
+    port = runtime_config.metrics.port
+
+    send_message(
+        address,
+        port,
         "#wikipedia-en-cbngfeed",
         "[[Type Dangerous]]  https://en.wikipedia.org/w/index.php?diff=1314252715&oldid=1313754858 * 2603:7081:1C00:534F:2199:A1F4:BA71:639E * (+0) /* Composition and lyrics */ # 0.041757 # Below threshold # Not reverted",
     )
-    await send_via_udp(
-        runtime_config.listener.address,
-        runtime_config.listener.port,
-        "#wikipedia-en-cbngfeed",
-        "[[Spanish–American War]]  https://en.wikipedia.org/w/index.php?diff=1314252669&oldid=1310871853 * 50.216.6.66 * (-683)  # 0.779827 # Below threshold # Not reverted",
-    )
-    await send_via_udp(
-        runtime_config.listener.address, runtime_config.listener.port, "#wikipedia-en-cbng-debug", "Hello World"
-    )
-    await send_via_tcp(
-        runtime_config.listener.address, runtime_config.listener.port, "#wikipedia-en-cbng-debug", "Hello World"
+    send_edit(
+        address,
+        port,
+        {
+            "change": {
+                "title": "Spanish–American War",
+                "user": "50.216.6.66",
+                "url": "https://en.wikipedia.org/w/index.php?diff=1314252669&oldid=1310871853",
+                "revision_id": 1314252669,
+                "namespace": "",
+                "flags": [],
+                "length": "-683",
+                "comment": "",
+            },
+            "reverted": False,
+            "comment": None,
+            "score": 0.779827,
+        },
     )
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

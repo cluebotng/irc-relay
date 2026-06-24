@@ -1,3 +1,4 @@
+import abc
 import asyncio
 
 from irc_relay.config.sender import CbngReceiverConfig, SenderConfig
@@ -6,14 +7,14 @@ from irc_relay.messages.processor import ClueBotNGMessageProcessor
 from irc_relay.senders.irc import IrcClient
 
 
-class MessageReceiver:
-    async def send(self, message: TextMessage) -> None:
-        raise NotImplementedError
+class MessageReceiver(abc.ABC):
+    @abc.abstractmethod
+    async def send(self, message: TextMessage) -> None: ...
 
 
-class EditMessageReceiver:
-    async def send_edit(self, edit: ProcessedEdit) -> None:
-        raise NotImplementedError
+class EditMessageReceiver(abc.ABC):
+    @abc.abstractmethod
+    async def send_edit(self, edit: ProcessedEdit) -> None: ...
 
 
 class IrcReceiver(MessageReceiver):
@@ -35,9 +36,7 @@ class ClueBotNGIrcReceiver(IrcReceiver, ClueBotNGMessageProcessor, EditMessageRe
             revert_channel=self._cbng_config.revert_channel,
             huggle_channel=self._cbng_config.huggle_channel,
         )
-        await asyncio.gather(
-            *[self._irc_client.send_to_channel(channel, msg) for channel, msg in messages]
-        )
+        await asyncio.gather(*[self._irc_client.send_to_channel(channel, msg) for channel, msg in messages])
 
 
 class DebugReceiver(MessageReceiver, ClueBotNGMessageProcessor, EditMessageReceiver):
@@ -70,7 +69,7 @@ class MessageDispatcher:
         await asyncio.gather(*[receiver.send_edit(edit) for receiver in edit_receivers])
 
 
-def _make_receiver(receiver_type: str, client: IrcClient, sender_config: SenderConfig) -> MessageReceiver:
+def make_receiver(receiver_type: str, client: IrcClient, sender_config: SenderConfig) -> MessageReceiver:
     if receiver_type == "irc":
         return IrcReceiver(client)
     if receiver_type == "cbng":

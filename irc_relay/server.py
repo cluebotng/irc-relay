@@ -8,7 +8,7 @@ from irc_relay.rate_limit.sliding_window import SlidingWindowRateLimit
 from irc_relay.messages.dispatcher import (
     MessageDispatcher,
     DebugReceiver,
-    _make_receiver,
+    make_receiver,
 )
 from irc_relay.senders.irc import IrcClient
 
@@ -38,7 +38,7 @@ async def main():
             SlidingWindowRateLimit(sender.throttler.buckets) if sender.throttler else None,
         )
         jobs.append(asyncio.create_task(client.run()))
-        message_dispatcher.add_receiver(_make_receiver(sender.receiver, client, sender))
+        message_dispatcher.add_receiver(make_receiver(sender.receiver, client, sender))
 
     if not runtime_config.senders:
         logger.info("Adding default debug receiver")
