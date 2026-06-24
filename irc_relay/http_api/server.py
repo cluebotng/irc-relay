@@ -34,7 +34,7 @@ def create_listener(message_dispatcher: MessageDispatcher) -> APIRouter:
     @router.put("/")
     async def _handle_message(message: ExternalMessage) -> Response:
         await message_dispatcher.send(Message(channel=message.channel, string=message.string))
-        listener_messages_accepted.labels(listener="http").inc()
+        listener_messages_accepted.inc()
         return Response("OK")
 
     return router
