@@ -1,3 +1,6 @@
-class RateLimiter:
-    def should_allow(self) -> bool:
-        raise NotImplementedError
+import abc
+
+
+class RateLimiter(abc.ABC):
+    @abc.abstractmethod
+    def should_allow(self) -> bool: ...
