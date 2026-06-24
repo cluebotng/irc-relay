@@ -4,8 +4,6 @@ import logging
 
 from irc_relay.config.runtime import RuntimeConfig
 from irc_relay.http_api.server import HttpServer
-from irc_relay.listeners.tcp import TcpListener
-from irc_relay.listeners.udp import UdpListener
 from irc_relay.rate_limit.sliding_window import SlidingWindowRateLimit
 from irc_relay.messages.dispatcher import (
     MessageDispatcher,
@@ -22,32 +20,12 @@ async def main():
     runtime_config = RuntimeConfig.from_env()
     message_dispatcher = MessageDispatcher()
 
-    udp_listener = UdpListener(
-        runtime_config.listener.address,
-        runtime_config.listener.port,
-        message_dispatcher,
-    )
-
-    tcp_listener = TcpListener(
-        runtime_config.listener.address,
-        runtime_config.listener.port,
-        message_dispatcher,
-    )
-
-    run_http_server = HttpServer(
-        runtime_config.metrics.address,
-        runtime_config.metrics.port,
-        message_dispatcher,
-    )
-
-    # Start the listeners
     jobs = [
-        asyncio.create_task(udp_listener.run()),
-        asyncio.create_task(tcp_listener.run()),
-        asyncio.create_task(run_http_server.run()),
+        asyncio.create_task(
+            HttpServer(runtime_config.metrics.address, runtime_config.metrics.port, message_dispatcher).run()
+        ),
     ]
 
-    # Start the senders
     for sender in runtime_config.senders:
         logger.info(f"Creating sender: {sender.client.server}:{sender.client.port}")
         client = IrcClient(
@@ -62,7 +40,6 @@ async def main():
         jobs.append(asyncio.create_task(client.run()))
         message_dispatcher.add_receiver(SUPPORTED_RECEIVERS[sender.receiver](client))
 
-    # Create a default message receiver if we have no senders
     if not runtime_config.senders:
         logger.info("Adding default debug receiver")
         message_dispatcher.add_receiver(DebugReceiver())
