@@ -2,7 +2,6 @@ import asyncio
 import base64
 import logging
 import time
-from typing import Optional, List, Dict
 
 import bottom
 
@@ -19,19 +18,19 @@ logger = logging.getLogger(__name__)
 
 class IrcClient:
     _should_run: bool
-    _can_accept_messages: Dict[str, bool]
-    _allowed_channels: List[str]
-    _client: Optional[bottom.Client]
+    _can_accept_messages: dict[str, bool]
+    _allowed_channels: list[str]
+    _client: bottom.Client | None
 
     def __init__(
         self,
         server: str,
         port: int,
         nick: str,
-        username: Optional[str],
-        password: Optional[str],
-        allowed_channels: List[str],
-        rate_limiter: Optional[RateLimiter],
+        username: str | None,
+        password: str | None,
+        allowed_channels: list[str],
+        rate_limiter: RateLimiter | None,
     ):
         self._identifier = f"{server}:{port}"
 
@@ -139,7 +138,7 @@ class IrcClient:
         await self._client.send("pong", message=message)
 
     async def _message_callback(self, nick: str, target: str, message: str, **kwargs) -> None:
-        logger.info(f"[{self._identifier}] Got message from {nick} in {target: {message}}")
+        logger.info(f"[{self._identifier}] Got message from {nick} in {target}: {message}")
 
     async def _authenticate_via_sasl(self) -> bool:
         if not (self._irc_username and self._irc_password):
@@ -226,6 +225,6 @@ class IrcClient:
             logger.error(f"[{self._identifier}] Disconnected by remote")
 
             irc_connection_status.labels(name=self._identifier).set(0)
-            self._can_accept_messages = {channel: False for channel in self._can_accept_messages.keys()}
+            self._can_accept_messages = {channel: False for channel in self._can_accept_messages}
             self._client = None
             await asyncio.sleep(5)

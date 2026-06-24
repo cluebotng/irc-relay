@@ -1,5 +1,4 @@
 import logging
-from typing import Optional, Union
 
 import uvicorn
 from fastapi import FastAPI, APIRouter, Response
@@ -26,15 +25,15 @@ class EditChangePayload(BaseModel):
     revision_id: int
     namespace: str = ""
     flags: list[str] = []
-    length: Optional[int] = None
+    length: str | None = None
     comment: str = ""
 
 
 class EditPayload(BaseModel):
     change: EditChangePayload
     reverted: bool
-    comment: Optional[str]
-    score: Optional[float]
+    comment: str | None
+    score: float | None
 
 
 @app.get("/health")
@@ -51,22 +50,13 @@ def create_listener(message_dispatcher: MessageDispatcher) -> APIRouter:
     router = APIRouter()
 
     @router.put("/")
-    async def _handle_message(payload: Union[ExternalMessage, EditPayload]) -> Response:
+    async def _handle_message(payload: ExternalMessage | EditPayload) -> Response:
         if isinstance(payload, ExternalMessage):
             await message_dispatcher.send(TextMessage(channel=payload.channel, string=payload.string))
         else:
             await message_dispatcher.send_edit(
                 ProcessedEdit(
-                    change=EditChange(
-                        title=payload.change.title,
-                        user=payload.change.user,
-                        url=payload.change.url,
-                        revision_id=payload.change.revision_id,
-                        namespace=payload.change.namespace,
-                        flags=payload.change.flags,
-                        length=payload.change.length,
-                        comment=payload.change.comment,
-                    ),
+                    change=EditChange(**payload.change.model_dump()),
                     score=payload.score,
                     reverted=payload.reverted,
                     comment=payload.comment,
@@ -80,15 +70,13 @@ def create_listener(message_dispatcher: MessageDispatcher) -> APIRouter:
 
 class HttpServer:
     def __init__(self, address: str, port: int, dispatcher: MessageDispatcher):
-        self._should_run = True
         self._address = address
         self._port = port
-        self._server = None
+        self._server: uvicorn.Server | None = None
         self._dispatcher = dispatcher
 
     async def shutdown(self) -> None:
         logger.info("Shutting down HTTP Server")
-        self._should_run = False
         if self._server:
             self._server.shutdown()
 
