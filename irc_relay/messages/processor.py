@@ -1,12 +1,12 @@
 import logging
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
-from irc_relay.messages.models import Message
+from irc_relay.messages.models import Message, ProcessedEdit
 
 logger = logging.getLogger(__name__)
 
 
-class HuggleMessageProcessor:
+class StringHuggleMessageProcessor:
     async def _get_huggle_messages(self, message: Message) -> List[Tuple[str, str]]:
         # Convert ClueBot NG formatted messages into Huggle formatted messages
         # x-ref https://github.com/huggle/cluenet-relay/blob/master/CluebotRelay/cluebotrelay.cpp#L69
@@ -41,4 +41,42 @@ class HuggleMessageProcessor:
         elif score and score > 0.1:
             huggle_score = int((score - 0.2) * 1000)
             messages.append(("#en.wikipedia.huggle", f"SCORED {diff_id} {huggle_score}"))
+        return messages
+
+
+class RevertMessageProcessor:
+    def _format_revert_message(self, edit: ProcessedEdit) -> str:
+        score_str = f"{edit.score:.6f}" if edit.score is not None else ""
+        return (
+            f"\x0315[[\x0307{edit.change.title}\x0315]] by \"\x0303{edit.change.user}\x0315\""
+            f" (\x0312 {edit.change.url} \x0315) \x0306{score_str}\x0315"
+            f" (\x0304Reverted\x0315) (\x0313{edit.comment or ''}\x0315)"
+        )
+
+
+class HuggleMessageProcessor:
+    def _format_huggle_message(self, revision_id: int, score: Optional[float], reverted: bool) -> Optional[str]:
+        if reverted:
+            return f"ROLLBACK {revision_id}"
+        if score is not None and score > 0.1:
+            return f"SCORED {revision_id} {int((score - 0.2) * 1000)}"
+        return None
+
+
+class ClueBotNGMessageProcessor(RevertMessageProcessor, HuggleMessageProcessor):
+    def _get_edit_messages(
+        self,
+        edit: ProcessedEdit,
+        revert_channel: Optional[str],
+        huggle_channel: Optional[str],
+    ) -> list[tuple[str, str]]:
+        messages = []
+
+        if revert_channel and edit.reverted:
+            messages.append((revert_channel, self._format_revert_message(edit)))
+
+        if huggle_channel:
+            if text := self._format_huggle_message(edit.change.revision_id, edit.score, edit.reverted):
+                messages.append((huggle_channel, text))
+
         return messages
