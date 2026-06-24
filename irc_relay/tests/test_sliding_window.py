@@ -9,7 +9,7 @@ class TestSlidingWindowRateLimit:
     def test_single_bucket(self):
         rate_limiter = SlidingWindowRateLimit([BucketConfig(window=1, limit=25)])
         for x in range(0, 50):
-            if x <= 25:
+            if x < 25:
                 assert rate_limiter.should_allow() is True  # nosec B101:assert_used
             else:
                 assert rate_limiter.should_allow() is False  # nosec B101:assert_used
@@ -17,22 +17,21 @@ class TestSlidingWindowRateLimit:
     def test_multi_bucket(self):
         rate_limiter = SlidingWindowRateLimit([BucketConfig(window=1, limit=25), BucketConfig(window=30, limit=100)])
 
-        # 1 second bucket should allow half
+        # 1 second bucket should allow exactly 25
         with freeze_time("2025-09-01 00:00:00"):
-            for x in range(0, 51):
-                if x <= 25:
+            for x in range(0, 50):
+                if x < 25:
                     assert rate_limiter.should_allow() is True, f"Instance {x}"  # nosec B101:assert_used
                 else:
                     assert rate_limiter.should_allow() is False, f"Instance {x}"  # nosec B101:assert_used
 
-        # 30 second bucket should allow half, it already has half from the above
-        # Progress the second to avoid the 1 second bucket
+        # 30 second bucket already has 25 used; fill up remaining 75 across 10 seconds
         instance = 0
         for s in range(1, 11):
             with freeze_time(f"2025-09-01 00:00:{10 + s}"):
                 for x in range(0, 10):
                     instance += 1
-                    if instance <= 50:
+                    if instance <= 75:
                         assert rate_limiter.should_allow() is True, f"Instance {instance}"  # nosec B101:assert_used
                     else:
                         assert rate_limiter.should_allow() is False, f"Instance {instance}"  # nosec B101:assert_used
