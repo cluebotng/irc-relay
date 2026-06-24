@@ -1,5 +1,4 @@
 import dataclasses
-from typing import Optional
 
 
 @dataclasses.dataclass
@@ -16,7 +15,7 @@ class EditChange:
     revision_id: int
     namespace: str = ""
     flags: list[str] = dataclasses.field(default_factory=list)
-    length: Optional[int] = None
+    length: str | None = None
     comment: str = ""
 
 
@@ -24,5 +23,5 @@ class EditChange:
 class ProcessedEdit:
     change: EditChange
     reverted: bool
-    comment: Optional[str]
-    score: Optional[float]
+    comment: str | None
+    score: float | None

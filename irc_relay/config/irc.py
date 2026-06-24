@@ -1,6 +1,5 @@
 import dataclasses
 import os
-from typing import Optional, List
 
 
 @dataclasses.dataclass
@@ -8,9 +7,9 @@ class IrcClientConfig:
     server: str
     port: int
     nick: str
-    username: Optional[str]
-    password: Optional[str]
-    channels: List[str]
+    username: str | None
+    password: str | None
+    channels: list[str]
 
     @staticmethod
     def from_environment(env_var_prefix: str) -> "IrcClientConfig":

@@ -1,6 +1,5 @@
 import dataclasses
 import os
-from typing import Optional
 
 from irc_relay.config.irc import IrcClientConfig
 from irc_relay.config.rate_limit import SlidingWindowRateLimitConfig
@@ -8,8 +7,8 @@ from irc_relay.config.rate_limit import SlidingWindowRateLimitConfig
 
 @dataclasses.dataclass
 class CbngReceiverConfig:
-    revert_channel: Optional[str]
-    huggle_channel: Optional[str]
+    revert_channel: str | None
+    huggle_channel: str | None
 
     @staticmethod
     def from_environment(env_var_prefix: str) -> "CbngReceiverConfig":
@@ -22,7 +21,7 @@ class CbngReceiverConfig:
 @dataclasses.dataclass
 class SenderConfig:
     receiver: str
-    throttler: Optional[SlidingWindowRateLimitConfig]
+    throttler: SlidingWindowRateLimitConfig | None
     client: IrcClientConfig
     cbng: CbngReceiverConfig
 
