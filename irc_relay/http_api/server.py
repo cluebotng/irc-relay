@@ -8,7 +8,7 @@ from pydantic import BaseModel
 
 from irc_relay.listeners.metrics import listener_messages_accepted
 from irc_relay.messages.dispatcher import MessageDispatcher
-from irc_relay.messages.models import EditChange, Message, ProcessedEdit, TextMessage
+from irc_relay.messages.models import EditChange, ProcessedEdit, TextMessage
 
 logger = logging.getLogger(__name__)
 app = FastAPI()
@@ -53,7 +53,7 @@ def create_listener(message_dispatcher: MessageDispatcher) -> APIRouter:
     @router.put("/")
     async def _handle_message(payload: Union[ExternalMessage, EditPayload]) -> Response:
         if isinstance(payload, ExternalMessage):
-            await message_dispatcher.send(Message(channel=payload.channel, string=payload.string))
+            await message_dispatcher.send(TextMessage(channel=payload.channel, string=payload.string))
         else:
             await message_dispatcher.send_edit(
                 ProcessedEdit(
