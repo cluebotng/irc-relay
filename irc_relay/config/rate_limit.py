@@ -1,14 +1,13 @@
 import dataclasses
 import json
 import os
-from typing import List
 
 from irc_relay.rate_limit import sliding_window
 
 
 @dataclasses.dataclass
 class SlidingWindowRateLimitConfig:
-    buckets: List[sliding_window.BucketConfig]
+    buckets: list[sliding_window.BucketConfig]
 
     @staticmethod
     def from_default() -> "SlidingWindowRateLimitConfig":

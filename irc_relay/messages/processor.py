@@ -1,5 +1,3 @@
-from typing import Optional
-
 from irc_relay.messages.models import ProcessedEdit
 
 
@@ -7,14 +5,14 @@ class RevertMessageProcessor:
     def _format_revert_message(self, edit: ProcessedEdit) -> str:
         score_str = f"{edit.score:.6f}" if edit.score is not None else ""
         return (
-            f"\x0315[[\x0307{edit.change.title}\x0315]] by \"\x0303{edit.change.user}\x0315\""
+            f'\x0315[[\x0307{edit.change.title}\x0315]] by "\x0303{edit.change.user}\x0315"'
             f" (\x0312 {edit.change.url} \x0315) \x0306{score_str}\x0315"
             f" (\x0304Reverted\x0315) (\x0313{edit.comment or ''}\x0315)"
         )
 
 
 class HuggleMessageProcessor:
-    def _format_huggle_message(self, revision_id: int, score: Optional[float], reverted: bool) -> Optional[str]:
+    def _format_huggle_message(self, revision_id: int, score: float | None, reverted: bool) -> str | None:
         if reverted:
             return f"ROLLBACK {revision_id}"
         if score is not None and score > 0.1:
@@ -26,8 +24,8 @@ class ClueBotNGMessageProcessor(RevertMessageProcessor, HuggleMessageProcessor):
     def _get_edit_messages(
         self,
         edit: ProcessedEdit,
-        revert_channel: Optional[str],
-        huggle_channel: Optional[str],
+        revert_channel: str | None,
+        huggle_channel: str | None,
     ) -> list[tuple[str, str]]:
         messages = []
 
