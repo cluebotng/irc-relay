@@ -7,7 +7,7 @@ from pydantic import BaseModel
 
 from irc_relay.listeners.metrics import listener_messages_accepted
 from irc_relay.messages.dispatcher import MessageDispatcher
-from irc_relay.messages.models import EditChange, ProcessedEdit, TextMessage
+from irc_relay.messages.models import EditChange, ProcessedEdit, TextMessage, WarnedUser
 
 logger = logging.getLogger(__name__)
 app = FastAPI()
@@ -36,6 +36,11 @@ class EditPayload(BaseModel):
     score: float | None
 
 
+class WarnedUserPayload(BaseModel):
+    username: str
+    level: int
+
+
 @app.get("/health")
 async def _handle_health() -> Response:
     return Response("OK")
@@ -50,9 +55,11 @@ def create_listener(message_dispatcher: MessageDispatcher) -> APIRouter:
     router = APIRouter()
 
     @router.put("/")
-    async def _handle_message(payload: ExternalMessage | EditPayload) -> Response:
+    async def _handle_message(payload: ExternalMessage | EditPayload | WarnedUserPayload) -> Response:
         if isinstance(payload, ExternalMessage):
             await message_dispatcher.send(TextMessage(channel=payload.channel, string=payload.string))
+        elif isinstance(payload, WarnedUserPayload):
+            await message_dispatcher.send_user_warning(WarnedUser(username=payload.username, level=payload.level))
         else:
             await message_dispatcher.send_edit(
                 ProcessedEdit(

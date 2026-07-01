@@ -1,4 +1,4 @@
-from irc_relay.messages.models import ProcessedEdit
+from irc_relay.messages.models import ProcessedEdit, WarnedUser
 
 
 class RevertMessageProcessor:
@@ -11,6 +11,11 @@ class RevertMessageProcessor:
         )
 
 
+class WarnMessageProcessor:
+    def _format_huggle_warn_message(self, warn: WarnedUser) -> str:
+        return f"WARN {warn.level} {warn.username}"
+
+
 class HuggleMessageProcessor:
     def _format_huggle_message(self, revision_id: int, score: float | None, reverted: bool) -> str | None:
         if reverted:
@@ -20,7 +25,7 @@ class HuggleMessageProcessor:
         return None
 
 
-class ClueBotNGMessageProcessor(RevertMessageProcessor, HuggleMessageProcessor):
+class ClueBotNGMessageProcessor(RevertMessageProcessor, HuggleMessageProcessor, WarnMessageProcessor):
     def _get_edit_messages(
         self,
         edit: ProcessedEdit,
@@ -35,5 +40,17 @@ class ClueBotNGMessageProcessor(RevertMessageProcessor, HuggleMessageProcessor):
         if huggle_channel:
             if text := self._format_huggle_message(edit.change.revision_id, edit.score, edit.reverted):
                 messages.append((huggle_channel, text))
+
+        return messages
+
+    def _get_warn_messages(
+        self,
+        warn: WarnedUser,
+        huggle_channel: str | None,
+    ) -> list[tuple[str, str]]:
+        messages = []
+
+        if huggle_channel:
+            messages.append((huggle_channel, self._format_huggle_warn_message(warn)))
 
         return messages
