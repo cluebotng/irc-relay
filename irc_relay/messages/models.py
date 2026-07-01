@@ -25,3 +25,9 @@ class ProcessedEdit:
     reverted: bool
     comment: str | None
     score: float | None
+
+
+@dataclasses.dataclass
+class WarnedUser:
+    username: str
+    level: int
