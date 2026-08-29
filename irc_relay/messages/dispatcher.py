@@ -57,12 +57,12 @@ class DebugReceiver(MessageReceiver, ClueBotNGMessageProcessor, EditMessageRecei
             edit, revert_channel="#debug-revert", huggle_channel="#debug-huggle"
         ):
             print(f"  [{channel}] {msg}")
-        print("")
+        print()
 
     async def send_user_warning(self, warn: WarnedUser) -> None:
         for channel, msg in self._get_warn_messages(warn, huggle_channel="#debug-huggle"):
             print(f"  [{channel}] {msg}")
-        print("")
+        print()
 
 
 class MessageDispatcher:

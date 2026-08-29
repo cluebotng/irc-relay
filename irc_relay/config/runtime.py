@@ -1,7 +1,6 @@
 import dataclasses
 import logging
 import os
-from typing import List
 
 from irc_relay.config.metrics import MetricsConfig
 from irc_relay.config.sender import SenderConfig
@@ -11,13 +10,13 @@ logger = logging.getLogger(__name__)
 
 @dataclasses.dataclass
 class RuntimeConfig:
-    senders: List[SenderConfig]
+    senders: list[SenderConfig]
     metrics: MetricsConfig
 
     @staticmethod
     def from_env() -> "RuntimeConfig":
         environments = set()
-        for env_var in os.environ.keys():
+        for env_var in os.environ:
             if env_var.startswith("IRC_RELAY_SENDER_"):
                 environments.add(env_var.removeprefix("IRC_RELAY_SENDER_").split("_")[0].lower())
 

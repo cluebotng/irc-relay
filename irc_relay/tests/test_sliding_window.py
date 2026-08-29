@@ -8,7 +8,7 @@ class TestSlidingWindowRateLimit:
     @freeze_time()
     def test_single_bucket(self):
         rate_limiter = SlidingWindowRateLimit([BucketConfig(window=1, limit=25)])
-        for x in range(0, 50):
+        for x in range(50):
             if x < 25:
                 assert rate_limiter.should_allow() is True  # nosec B101:assert_used
             else:
@@ -19,7 +19,7 @@ class TestSlidingWindowRateLimit:
 
         # 1 second bucket should allow exactly 25
         with freeze_time("2025-09-01 00:00:00"):
-            for x in range(0, 50):
+            for x in range(50):
                 if x < 25:
                     assert rate_limiter.should_allow() is True, f"Instance {x}"  # nosec B101:assert_used
                 else:
@@ -29,7 +29,7 @@ class TestSlidingWindowRateLimit:
         instance = 0
         for s in range(1, 11):
             with freeze_time(f"2025-09-01 00:00:{10 + s}"):
-                for x in range(0, 10):
+                for x in range(10):
                     instance += 1
                     if instance <= 75:
                         assert rate_limiter.should_allow() is True, f"Instance {instance}"  # nosec B101:assert_used

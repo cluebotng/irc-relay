@@ -167,7 +167,7 @@ class IrcClient:
 
         # Send credentials
         auth_string = base64.b64encode(
-            f"{self._irc_nick}\0{self._irc_username}\0{self._irc_password}".encode("utf-8")
+            f"{self._irc_nick}\0{self._irc_username}\0{self._irc_password}".encode()
         ).decode("utf-8")
         logger.debug(f"[{self._identifier}] Sending authentication")
         await self._client.send_message(f"AUTHENTICATE {auth_string}")
