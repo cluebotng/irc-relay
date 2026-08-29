@@ -37,9 +37,8 @@ class ClueBotNGMessageProcessor(RevertMessageProcessor, HuggleMessageProcessor, 
         if revert_channel and edit.reverted:
             messages.append((revert_channel, self._format_revert_message(edit)))
 
-        if huggle_channel:
-            if text := self._format_huggle_message(edit.change.revision_id, edit.score, edit.reverted):
-                messages.append((huggle_channel, text))
+        if huggle_channel and (text := self._format_huggle_message(edit.change.revision_id, edit.score, edit.reverted)):
+            messages.append((huggle_channel, text))
 
         return messages
 
