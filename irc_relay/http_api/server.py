@@ -1,8 +1,8 @@
 import logging
 
 import uvicorn
-from fastapi import FastAPI, APIRouter, Response
-from prometheus_client import generate_latest, CONTENT_TYPE_LATEST
+from fastapi import APIRouter, FastAPI, Response
+from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 from pydantic import BaseModel
 
 from irc_relay.listeners.metrics import listener_messages_accepted

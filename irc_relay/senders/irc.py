@@ -7,10 +7,10 @@ import bottom
 
 from irc_relay.rate_limit.base import RateLimiter
 from irc_relay.senders.metrics import (
-    irc_messages_accepted,
-    irc_messages_rejected,
     irc_connection_status,
     irc_connection_time,
+    irc_messages_accepted,
+    irc_messages_rejected,
 )
 
 logger = logging.getLogger(__name__)
