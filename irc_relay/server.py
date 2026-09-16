@@ -4,12 +4,12 @@ import logging
 
 from irc_relay.config.runtime import RuntimeConfig
 from irc_relay.http_api.server import HttpServer
-from irc_relay.rate_limit.sliding_window import SlidingWindowRateLimit
 from irc_relay.messages.dispatcher import (
-    MessageDispatcher,
     DebugReceiver,
+    MessageDispatcher,
     make_receiver,
 )
+from irc_relay.rate_limit.sliding_window import SlidingWindowRateLimit
 from irc_relay.senders.irc import IrcClient
 
 logger = logging.getLogger(__name__)

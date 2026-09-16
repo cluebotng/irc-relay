@@ -1,6 +1,6 @@
 from freezegun import freeze_time
 
-from irc_relay.rate_limit.sliding_window import SlidingWindowRateLimit, BucketConfig
+from irc_relay.rate_limit.sliding_window import BucketConfig, SlidingWindowRateLimit
 
 
 class TestSlidingWindowRateLimit:
